@@ -27,17 +27,39 @@ def init_model(path: str) -> GPT4All:
     return model
 
 
-def get_model() -> GPT4All:
+class Config:
+    def __init__(self, tokens: int, model: GPT4All, chat: bool, prompt: str):
+        self.model = model
+        self.tokens = tokens
+        self.prompt = prompt
+
+
+def get_config() -> Config:
     parser = argparse.ArgumentParser(
         description="CLI that runs an LLM in the terminal."
     )
     parser.add_argument(
         "-m", "--model", help="Model path. Must be a .gguf file.", required=True
     )
+    parser.add_argument(
+        "-c",
+        "--chat",
+        action="store_true",
+        help="Enter chat to further prompt (still used stdin for context)",
+    )
+    parser.add_argument("args", nargs="*")
+    parser.add_argument("-t", "--tokens", help="Max number of tokens.", default=1024)
     args = parser.parse_args()
+
+    tokens = args.tokens
+    if not isinstance(tokens, int):
+        raise TypeError()
+
     model_path = args.model
     model = init_model(model_path)
-    return model
+    prompt = " ".join(args.args)
+    c = Config(tokens, model, bool(args.chat), prompt)
+    return c
 
 
 def print_stream(stream: Iterable[str], delay: float = 0.02):
@@ -51,32 +73,28 @@ def print_stream(stream: Iterable[str], delay: float = 0.02):
         time.sleep(delay)
 
 
-def chat(model: GPT4All):
-    with model.chat_session(system_prompt=SYSTEM_PROMPT):
+def chat(model: GPT4All, max_tokens: int, context: str | None = None):
+    sys_prompt = (
+        SYSTEM_PROMPT + "\nContext:\n" + context
+        if context is not None
+        else SYSTEM_PROMPT
+    )
+    with model.chat_session(system_prompt=sys_prompt):
         while True:
             prompt = str(input(">> "))
-            if prompt == "q":
-                print("Goodbye")
-                break
-
-            if prompt == "h":
-                print("Help...")
-                continue
-
             stream = model.generate(
                 prompt,
-                max_tokens=1024,
+                max_tokens=max_tokens,
                 streaming=True,
             )
             print_stream(stream)
-    return
 
 
-def one(model: GPT4All, prompt: str):
+def one(model: GPT4All, prompt: str, max_tokens: int):
     with model.chat_session(system_prompt=SYSTEM_PROMPT):
         stream = model.generate(
             prompt,
-            max_tokens=1024,
+            max_tokens=max_tokens,
             streaming=True,
         )
         print_stream(stream)
@@ -91,12 +109,12 @@ def set_signal_handler():
 
 def main():
     set_signal_handler()
-    model = get_model()
+    config = get_config()
     if not sys.stdin.isatty():
-        prompt = sys.stdin.read()
-        one(model, prompt)
+        prompt = sys.stdin.read() + config.prompt
+        one(config.model, prompt, config.tokens)
     else:
-        chat(model)
+        chat(config.model, config.tokens)
 
 
 if __name__ == "__main__":
