@@ -6,43 +6,33 @@ from rich.markdown import Markdown
 import sys
 import time
 import signal
+import os
 
-
-MODELS = {
-    "small": "Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf",
-    "large": "phi-4-fp16.gguf",
-}
 
 SYSTEM_PROMPT = "You are a general purpose AI chat bot. Output in markdown."
 
 
-class Config:
-    def __init__(self, model: str):
-        self.model: str = model
+def init_model(path: str) -> GPT4All:
+    if not os.path.exists(path):
+        raise FileNotFoundError("Path is invalid")
 
-
-def parse_config() -> Config:
-    parser = argparse.ArgumentParser(description="gpt-shell is a CLI that runs an LLM")
-    parser.add_argument(
-        "-l",
-        "--large",
-        action="store_true",
-        help="Runs the prompt or chat with a larger language model",
-    )
-    parsers = parser.add_subparsers(dest="command")
-    parsers.add_parser("models", help="Lists all availables models")
-    d = parser.parse_args()
-    c = Config("large" if d.large else "small")
-    return c
-
-
-def get_model(typ: str) -> GPT4All:
+    model_path = os.path.dirname(path)
+    model = os.path.basename(path)
     model = GPT4All(
-        MODELS[typ],
-        model_path="./models",
+        model,
+        model_path=model_path,
         allow_download=False,
         device="gpu",
     )
+    return model
+
+
+def get_model() -> GPT4All:
+    parser = argparse.ArgumentParser(description="gpt-shell is a CLI that runs an LLM")
+    parser.add_argument("-m", "--model", help="Model path", required=True)
+    args = parser.parse_args()
+    model_path = args.model
+    model = init_model(model_path)
     return model
 
 
@@ -88,11 +78,6 @@ def one(model: GPT4All, prompt: str):
         print_stream(stream)
 
 
-def list_models():
-    for key, val in MODELS.items():
-        print(key, " - ", val)
-
-
 def set_signal_handler():
     def handler(sig, frame):
         sys.exit(0)
@@ -102,8 +87,7 @@ def set_signal_handler():
 
 def main():
     set_signal_handler()
-    config = parse_config()
-    model = get_model(config.model)
+    model = get_model()
     if not sys.stdin.isatty():
         prompt = sys.stdin.read()
         one(model, prompt)
