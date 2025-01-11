@@ -22,8 +22,8 @@ Ensure your system has a compatible GPU if using the "gpu" device option.
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/yourusername/gpt4all-terminal-chatbot.git
-   cd gpt4all-terminal-chatbot
+   git clone https://github.com/GianlucaP106/gpt4all-cli
+   cd gpt4all-cli
    ```
 
 2. Install dependencies:
@@ -37,7 +37,7 @@ Ensure your system has a compatible GPU if using the "gpu" device option.
 ### Basic Command Structure
 
 ```bash
-python chat.py --model <path_to_model> [--out <output_file>] [-t <max_tokens>] [prompt]
+python gpt4all-cli.py --model <path_to_model> [--out <output_file>] [-t <max_tokens>] [prompt]
 ```
 
 - `--model`: Path to the `.gguf` model file. This is required.
