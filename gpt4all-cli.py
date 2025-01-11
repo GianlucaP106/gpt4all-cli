@@ -28,9 +28,7 @@ def init_model(path: str) -> GPT4All:
 
 
 class Config:
-    def __init__(
-        self, tokens: int, model: GPT4All, chat: bool, prompt: str, out: str | None
-    ):
+    def __init__(self, tokens: int, model: GPT4All, prompt: str, out: str | None):
         self.model = model
         self.tokens = tokens
         self.prompt = prompt
@@ -43,12 +41,6 @@ def get_config() -> Config:
     )
     parser.add_argument(
         "-m", "--model", help="Model path. Must be a .gguf file.", required=True
-    )
-    parser.add_argument(
-        "-c",
-        "--chat",
-        action="store_true",
-        help="Enter chat to further prompt (still used stdin for context)",
     )
     parser.add_argument("-o", "--out", help="Save the raw output.")
     parser.add_argument("args", nargs="*")
@@ -64,7 +56,7 @@ def get_config() -> Config:
     prompt = " ".join(args.args)
 
     out_path = args.out
-    c = Config(tokens, model, bool(args.chat), prompt, out_path)
+    c = Config(tokens, model, prompt, out_path)
     return c
 
 
@@ -125,6 +117,8 @@ def main():
     if not sys.stdin.isatty():
         prompt = sys.stdin.read() + config.prompt
         one(config.model, prompt, config.tokens, out=config.out)
+    elif config.prompt != "":
+        one(config.model, config.prompt, config.tokens, out=config.out)
     else:
         chat(config.model, config.tokens, context=config.prompt, out=config.out)
 
