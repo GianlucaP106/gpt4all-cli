@@ -28,8 +28,12 @@ def init_model(path: str) -> GPT4All:
 
 
 def get_model() -> GPT4All:
-    parser = argparse.ArgumentParser(description="gpt-shell is a CLI that runs an LLM")
-    parser.add_argument("-m", "--model", help="Model path", required=True)
+    parser = argparse.ArgumentParser(
+        description="CLI that runs an LLM in the terminal."
+    )
+    parser.add_argument(
+        "-m", "--model", help="Model path. Must be a .gguf file.", required=True
+    )
     args = parser.parse_args()
     model_path = args.model
     model = init_model(model_path)
